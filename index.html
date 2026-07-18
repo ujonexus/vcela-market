@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Včela Market 2.0 — cesta medu | Včelárstvo Poláček</title>
+<meta name="description" content="Od kvetu po pohár. Rodinné včelárstvo Poláček z Nového Mesta nad Váhom — druhové medy, propolis a peľ priamo od včelára.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   VČELA MARKET 2.0 — „Cesta medu"
+   Cinematic scroll-story: 5 video kapitol (LTX/Krea assety),
+   scroll = cesta medu od kvetu po šálku čaju.
+   TOKEN SYSTÉM (tmavá verzia pôvodnej palety)
+     --noc     #17110A  pozadie (tmavý plást, off-black hnedá)
+     --vosk    #F6EDD8  text (vosk z v1 — teraz ako svetlo)
+     --dim     #B9A98C  tlmený text
+     --jantar  #C87F0A  akcent — med v protisvetle
+     --nektar  #F0B429  svetlý akcent, HUD, čísla
+     --mak     #B5402E  CTA (vlčí mak z hero videa)
+   Typo: Fraunces (display) · system-ui (body) · DM Mono (HUD, ceny)
+   Signature: HUD „letový denník" — zvislá os kapitol vľavo,
+   plní sa medom podľa scrollu; kapitoly sa striedajú filmovými
+   strihmi (sticky video sekcie).
+   ============================================================ */
+:root{
+  --noc:    #17110A;
+  --noc-2:  #211809;
+  --vosk:   #F6EDD8;
+  --dim:    #B9A98C;
+  --jantar: #C87F0A;
+  --nektar: #F0B429;
+  --mak:    #B5402E;
+  --line:   rgba(246,237,216,.16);
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body:    system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:    'DM Mono', ui-monospace, 'Cascadia Mono', monospace;
+  /* z-index: 1 video, 3 gradient, 5 text, 40 hud, 50 nav, 100 skip */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scrollbar-color:var(--jantar) var(--noc)}
+body{background:var(--noc);color:var(--vosk);font-family:var(--font-body);
+  font-size:16px;line-height:1.6;overflow-x:hidden}
+::selection{background:var(--nektar);color:var(--noc)}
+img,svg,video{display:block;max-width:100%}
+a{color:var(--vosk);text-decoration:none}
+:focus-visible{outline:3px solid var(--nektar);outline-offset:3px;border-radius:2px}
+
+.skip{position:fixed;top:-60px;left:16px;z-index:100;background:var(--mak);color:#fff;
+  padding:10px 18px;border-radius:4px;font-weight:600;transition:top .2s}
+.skip:focus{top:12px}
+
+/* --- nav --- */
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;
+  justify-content:space-between;gap:20px;padding:16px 4vw;
+  background:linear-gradient(180deg,rgba(23,17,10,.82) 40%,rgba(23,17,10,0));
+  backdrop-filter:blur(0px)}
+.brand{font-family:var(--font-display);font-weight:900;font-size:1.2rem;
+  letter-spacing:.14em;text-transform:uppercase}
+.brand em{font-style:normal;color:var(--nektar)}
+.nav-meta{display:flex;align-items:center;gap:22px;font-size:.76rem;
+  letter-spacing:.14em;text-transform:uppercase;font-family:var(--font-mono)}
+.nav-meta a{padding:10px 4px;opacity:.75;transition:opacity .2s}
+.nav-meta a:hover{opacity:1}
+.kosik{border:1.5px solid var(--vosk);border-radius:999px;padding:8px 16px;
+  background:transparent;color:var(--vosk);font-family:var(--font-mono);font-size:.76rem;
+  letter-spacing:.1em;cursor:pointer;transition:background .2s,color .2s}
+.kosik:hover{background:var(--vosk);color:var(--noc)}
+.kosik b{color:var(--nektar);font-weight:500}
+.kosik:hover b{color:var(--jantar)}
+
+/* --- HUD: letový denník (signature) --- */
+.hud{position:fixed;left:30px;top:50%;transform:translateY(-50%);z-index:40;
+  display:flex;flex-direction:column;gap:2px;font-family:var(--font-mono)}
+.hud::before{content:"";position:absolute;left:7px;top:10px;bottom:10px;width:2.5px;
+  background:var(--line);border-radius:2px}
+.hud .med-stlpec{position:absolute;left:7px;top:10px;width:2.5px;height:0;
+  background:linear-gradient(var(--nektar),var(--jantar));border-radius:2px;
+  box-shadow:0 0 10px rgba(240,180,41,.45);
+  max-height:calc(100% - 20px)}
+.hud a{position:relative;display:flex;align-items:center;gap:15px;padding:11px 0 11px 0;
+  font-size:.76rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+  transition:color .3s}
+.hud a:hover{color:var(--vosk)}
+.hud a .hex{width:17px;height:19px;flex:none;
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+  background:var(--noc-2);border:none;outline:2px solid var(--line);outline-offset:-2px;
+  transition:background .3s,filter .3s}
+.hud a.aktivna{color:var(--vosk);text-shadow:0 0 14px rgba(240,180,41,.5)}
+.hud a.aktivna .hex{background:var(--nektar);outline-color:var(--nektar);
+  filter:drop-shadow(0 0 7px rgba(240,180,41,.9))}
+.hud a .nazov{opacity:.62;transition:opacity .25s;
+  text-shadow:0 1px 8px rgba(23,17,10,.8)}
+.hud:hover a .nazov,.hud a.aktivna .nazov{opacity:1}
+
+/* ============ VIDEO KAPITOLY ============ */
+.kapitola{position:relative;min-height:172vh}
+.kapitola .lepivy{position:sticky;top:0;height:100vh;overflow:hidden}
+.kapitola video,.kapitola .video-poster{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;z-index:1}
+.kapitola .clona{position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:linear-gradient(180deg,rgba(23,17,10,.42) 0%,rgba(23,17,10,0) 30%,
+  rgba(23,17,10,0) 52%,rgba(23,17,10,.78) 100%)}
+.kap-text{position:absolute;z-index:5;left:6vw;right:6vw;bottom:9vh;max-width:760px}
+.kap-text .kicker{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.38em;
+  text-transform:uppercase;color:var(--nektar);margin-bottom:2vh;
+  display:flex;align-items:center;gap:14px}
+.kap-text .kicker::before{content:"";width:44px;height:2px;background:var(--jantar)}
+.kap-text h2,.kap-text h1{font-family:var(--font-display);font-weight:900;
+  font-size:clamp(2.4rem,6.6vw,5.4rem);line-height:1.03;letter-spacing:-.015em;
+  text-wrap:balance;text-shadow:0 2px 30px rgba(23,17,10,.55)}
+.kap-text h1 .stroke,.kap-text h2 .stroke{color:transparent;-webkit-text-stroke:2px var(--vosk)}
+.kap-text p.pod{max-width:52ch;margin-top:2.2vh;color:var(--vosk);opacity:.86;
+  font-size:1.04rem;text-shadow:0 1px 16px rgba(23,17,10,.6)}
+.kap-text .slovo{display:inline-block}
+
+/* hero špecifiká */
+.hero .kap-text{bottom:12vh}
+.hero .cta{display:flex;gap:16px;margin-top:3.6vh;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:15px 30px;border-radius:999px;
+  font-weight:700;letter-spacing:.12em;font-size:.8rem;text-transform:uppercase;
+  font-family:var(--font-mono);cursor:pointer;
+  transition:transform .25s,background .25s,color .25s}
+.btn-plny{background:var(--mak);color:#fff}
+.btn-plny:hover{transform:scale(1.05);background:#9c3323}
+.btn-tich{border:2px solid var(--vosk);color:var(--vosk)}
+.btn-tich:hover{background:var(--vosk);color:var(--noc)}
+.srolluj{position:absolute;z-index:5;left:50%;bottom:3.2vh;transform:translateX(-50%);
+  font-family:var(--font-mono);font-size:.64rem;letter-spacing:.34em;
+  text-transform:uppercase;color:var(--vosk);opacity:.7;display:flex;
+  flex-direction:column;align-items:center;gap:8px}
+.srolluj::after{content:"";width:2px;height:34px;
+  background:linear-gradient(var(--nektar),transparent);
+  animation:kvapka 1.8s ease-in-out infinite}
+@keyframes kvapka{0%{transform:scaleY(0);transform-origin:top}
+  55%{transform:scaleY(1);transform-origin:top}
+  56%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* ============ INTERLUDE — plástový pás s číslami ============ */
+.interlude{position:relative;padding:20vh 6vw;overflow:clip;
+  border-block:1.5px solid var(--line)}
+.interlude .plast-bg{position:absolute;inset:-12% 0;z-index:1;
+  background:url("assets/textura_plast_med.png") center/cover no-repeat;will-change:transform}
+.interlude::after{content:"";position:absolute;inset:0;z-index:2;
+  background:rgba(23,17,10,.72)}
+.interlude .vnutro{position:relative;z-index:3;max-width:1100px;margin-inline:auto}
+.interlude blockquote{font-family:var(--font-display);font-weight:600;
+  font-size:clamp(1.7rem,4.2vw,3.2rem);line-height:1.2;max-width:24ch;text-wrap:balance}
+.interlude blockquote .akcent{color:var(--nektar)}
+.cisla{display:flex;gap:6vw;margin-top:7vh;flex-wrap:wrap}
+.cislo b{font-family:var(--font-display);font-weight:900;font-size:clamp(2rem,4.4vw,3.4rem);
+  display:block;color:var(--nektar)}
+.cislo span{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim)}
+
+/* ============ OBCHOD — vejár pohárov ============ */
+.obchod{position:relative;padding:16vh 6vw 12vh;background:
+  linear-gradient(180deg,var(--noc) 0%,var(--noc-2) 50%,var(--noc) 100%)}
+.obchod-hlava{max-width:1100px;margin-inline:auto}
+.obchod .kicker{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.38em;
+  text-transform:uppercase;color:var(--nektar);margin-bottom:2vh;
+  display:flex;align-items:center;gap:14px}
+.obchod .kicker::before{content:"";width:44px;height:2px;background:var(--jantar)}
+.obchod h2{font-family:var(--font-display);font-weight:900;
+  font-size:clamp(2.2rem,5.6vw,4.6rem);line-height:1.03}
+.obchod h2 .akcent{color:var(--nektar)}
+.obchod .pozn{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.08em;
+  color:var(--dim);margin-top:2vh;max-width:52ch}
+
+/* vejár: prekrývajúce sa okná, vybrané vystúpi z radu */
+.vejar{display:flex;justify-content:center;padding:9vh 0 5vh;margin-inline:auto;
+  max-width:1200px}
+.okno{position:relative;flex:0 1 150px;min-width:0;aspect-ratio:3/4;border:none;
+  padding:0;cursor:pointer;background:var(--noc-2);border-radius:14px;overflow:visible;
+  box-shadow:0 18px 44px rgba(0,0,0,.5);
+  transition:transform .38s cubic-bezier(.22,.9,.3,1.2),z-index 0s .1s}
+.okno + .okno{margin-left:-56px}
+.okno img{width:100%;height:100%;object-fit:cover;border-radius:14px;
+  outline:1.5px solid var(--line);outline-offset:-1.5px;
+  transition:filter .35s;filter:brightness(.62) saturate(.85)}
+.okno .stitok{position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);
+  white-space:nowrap;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--nektar);opacity:0;transition:opacity .3s}
+.okno:hover,.okno:focus-visible,.okno.vybrane{z-index:9;transform:translateY(-26px) scale(1.1);
+  transition:transform .38s cubic-bezier(.22,.9,.3,1.2)}
+.okno:hover img,.okno:focus-visible img,.okno.vybrane img{filter:brightness(1) saturate(1)}
+.okno.vybrane img{outline:2px solid var(--nektar)}
+.okno.vybrane .stitok,.okno:hover .stitok{opacity:1}
+
+/* detail vybraného produktu */
+.detail{max-width:640px;margin:7vh auto 0;text-align:center;min-height:180px}
+.detail h3{font-family:var(--font-display);font-weight:900;font-size:clamp(1.6rem,3.4vw,2.4rem)}
+.detail .vaha{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--dim);margin-top:6px}
+.detail p.popis{color:var(--dim);margin-top:1.6vh;max-width:46ch;margin-inline:auto}
+.detail .cena{font-family:var(--font-display);font-weight:900;font-size:2rem;
+  color:var(--nektar);margin:2vh 0}
+.kupit{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.14em;
+  text-transform:uppercase;border:2px solid var(--vosk);border-radius:999px;
+  background:transparent;color:var(--vosk);padding:13px 30px;cursor:pointer;
+  transition:background .2s,color .2s}
+.kupit:hover{background:var(--nektar);border-color:var(--nektar);color:var(--noc)}
+
+/* toast košíka */
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,80px);z-index:90;
+  background:var(--vosk);color:var(--noc);font-family:var(--font-mono);font-size:.82rem;
+  letter-spacing:.06em;padding:13px 26px;border-radius:999px;opacity:0;
+  transition:transform .35s cubic-bezier(.34,1.4,.64,1),opacity .35s;pointer-events:none}
+.toast.vidno{transform:translate(-50%,0);opacity:1}
+
+/* ============ FINÁLE — kontakt na pláste ============ */
+.finale{position:relative;padding:20vh 6vw 14vh;overflow:clip;text-align:center}
+.finale .plast-bg{position:absolute;inset:-12% 0;z-index:1;
+  background:url("assets/textura_plast_med.png") center/cover no-repeat;will-change:transform}
+.finale::after{content:"";position:absolute;inset:0;z-index:2;
+  background:radial-gradient(ellipse at center,rgba(23,17,10,.55),rgba(23,17,10,.9))}
+.finale .vnutro{position:relative;z-index:3;max-width:820px;margin-inline:auto}
+.finale h2{font-family:var(--font-display);font-weight:900;
+  font-size:clamp(2.4rem,6.4vw,5rem);line-height:1.04;text-wrap:balance}
+.finale h2 .akcent{color:var(--nektar)}
+.finale p{color:var(--vosk);opacity:.85;max-width:52ch;margin:2.6vh auto 0}
+.finale .cta{display:flex;gap:16px;margin-top:5vh;flex-wrap:wrap;justify-content:center}
+
+/* ============ FOOTER ============ */
+.kontakt{position:relative;z-index:10;border-top:1.5px solid var(--line);
+  padding:8vh 6vw 5vh;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:5vw;
+  background:var(--noc)}
+.kontakt h3{font-family:var(--font-display);font-weight:900;font-size:1.4rem;margin-bottom:1.6vh}
+.kontakt p,.kontakt a{color:var(--dim);font-size:.95rem}
+.kontakt a{text-decoration:underline;text-underline-offset:3px}
+.kontakt a:hover{color:var(--nektar)}
+.kontakt .stlp b{display:block;font-family:var(--font-mono);font-size:.7rem;
+  letter-spacing:.24em;text-transform:uppercase;color:var(--vosk);margin-bottom:1.4vh}
+.tiraz{grid-column:1/-1;margin-top:5vh;padding-top:2.5vh;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
+  font-family:var(--font-mono);font-size:.7rem;letter-spacing:.08em;color:var(--dim)}
+.tiraz .btn{border:none}
+
+/* ============ RESPONSÍVNE ============ */
+@media (max-width:900px){
+  .hud{display:none}
+  .nav-meta a{display:none}
+  .kapitola{min-height:150vh}
+  .kap-text{left:6vw;right:6vw;bottom:11vh}
+  .vejar{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;
+    scroll-snap-type:x mandatory;padding-bottom:8vh;gap:14px;
+    scrollbar-color:var(--jantar) transparent}
+  .okno{flex:0 0 46vw;scroll-snap-align:center}
+  .okno + .okno{margin-left:0}
+  .okno:hover,.okno:focus-visible,.okno.vybrane{transform:translateY(-10px) scale(1.04)}
+  .kontakt{grid-template-columns:1fr;gap:4vh}
+}
+
+/* ============ REDUCED MOTION ============ */
+@media (prefers-reduced-motion:reduce){
+  .srolluj::after{animation:none}
+  .slovo{opacity:1 !important;transform:none !important}
+  .odhal{opacity:1 !important;transform:none !important}
+  .plast-bg{transform:none !important}
+  .okno,.okno img,.btn{transition:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#obsah">Preskočiť na obsah</a>
+
+<header class="nav">
+  <a class="brand" href="#">VČELA<em>·</em>MARKET</a>
+  <nav class="nav-meta" aria-label="Hlavná navigácia">
+    <a href="#obchod">Obchod</a>
+    <a href="#kontakt">Kontakt</a>
+    <button class="kosik" type="button" aria-label="Košík, počet položiek">
+      Košík <b id="kosik-pocet">0</b>
+    </button>
+  </nav>
+</header>
+
+<!-- HUD — letový denník: os kapitol, plní sa medom podľa scrollu -->
+<nav class="hud" aria-label="Kapitoly cesty medu">
+  <span class="med-stlpec" aria-hidden="true"></span>
+  <a href="#k1" data-kap="k1"><span class="hex" aria-hidden="true"></span><span class="nazov">01 · Lúka</span></a>
+  <a href="#k2" data-kap="k2"><span class="hex" aria-hidden="true"></span><span class="nazov">02 · Úľ</span></a>
+  <a href="#k3" data-kap="k3"><span class="hex" aria-hidden="true"></span><span class="nazov">03 · Plást</span></a>
+  <a href="#k4" data-kap="k4"><span class="hex" aria-hidden="true"></span><span class="nazov">04 · Pohár</span></a>
+  <a href="#obchod" data-kap="obchod"><span class="hex" aria-hidden="true"></span><span class="nazov">05 · Výber</span></a>
+  <a href="#k6" data-kap="k6"><span class="hex" aria-hidden="true"></span><span class="nazov">06 · Stôl</span></a>
+</nav>
+
+<main id="obsah">
+
+<!-- ============ KAPITOLA 1 — HERO: LÚKA ============ -->
+<section class="kapitola hero" id="k1" aria-label="Kapitola 1 — Lúka">
+  <div class="lepivy">
+    <video autoplay muted loop playsinline preload="auto" poster="assets/hero_luka.png">
+      <source src="assets/hero_video.webm" type="video/webm">
+      <source src="assets/hero_video.mp4" type="video/mp4">
+    </video>
+    <div class="clona" aria-hidden="true"></div>
+    <div class="kap-text">
+      <p class="kicker">Včelárstvo Poláček · Nové Mesto nad Váhom</p>
+      <h1 data-split>Všetko sa začína<br>na jednom kvete.</h1>
+      <p class="pod">Scrolluj a prejdi celú cestu medu — z lúky pod Karpatmi,
+        cez úľ a plást, až po pohár na tvojom stole.</p>
+      <div class="cta">
+        <a class="btn btn-plny" href="#obchod">Do obchodu</a>
+        <a class="btn btn-tich" href="#k2">Začať cestu</a>
+      </div>
+    </div>
+    <p class="srolluj" aria-hidden="true">Scrolluj</p>
+  </div>
+</section>
+
+<!-- ============ KAPITOLA 2 — ÚĽ ============ -->
+<section class="kapitola" id="k2" aria-label="Kapitola 2 — Úľ">
+  <div class="lepivy">
+    <video muted loop playsinline preload="metadata" poster="assets/ul_vylet.png">
+      <source src="assets/hero_video_3.mp4" type="video/mp4">
+    </video>
+    <div class="clona" aria-hidden="true"></div>
+    <div class="kap-text">
+      <p class="kicker">Kapitola 02 — Úľ</p>
+      <h2 data-split>Sto tisíc krídel.<br>Jeden domov.</h2>
+      <p class="pod">Naše úle stoja na kraji lesa pri Novom Meste nad Váhom.
+        Každá včela doletí za nektárom aj tri kilometre — a vždy trafí domov.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ KAPITOLA 3 — PLÁST ============ -->
+<section class="kapitola" id="k3" aria-label="Kapitola 3 — Plást">
+  <div class="lepivy">
+    <video muted loop playsinline preload="metadata" poster="assets/plast_odvieckovanie.png">
+      <source src="assets/hero_video_4.mp4" type="video/mp4">
+    </video>
+    <div class="clona" aria-hidden="true"></div>
+    <div class="kap-text">
+      <p class="kicker">Kapitola 03 — Plást</p>
+      <h2 data-split>Med spí pod voskom.<br>My ho len zobudíme.</h2>
+      <p class="pod">Plásty odviečkujeme ručne a med stáčame po starom —
+        bez prihrievania, bez miešania cudzích medov. Čo nevyrobia
+        naše včely, nepredávame.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INTERLUDE — čísla na pláste ============ -->
+<section class="interlude" aria-label="Naše čísla">
+  <div class="plast-bg" aria-hidden="true"></div>
+  <div class="vnutro">
+    <blockquote>Od kvetu po pohár prejde náš med
+      <span class="akcent">jednými rukami.</span> Našimi.</blockquote>
+    <div class="cisla">
+      <div class="cislo odhal"><b data-pocitadlo="5">0</b><span>druhových medov</span></div>
+      <div class="cislo odhal"><b data-pocitadlo="950">0</b><span>gramov — pohár v cene</span></div>
+      <div class="cislo odhal"><b data-pocitadlo="100">0</b><span>% z našich úľov</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ KAPITOLA 4 — POHÁR ============ -->
+<section class="kapitola" id="k4" aria-label="Kapitola 4 — Pohár">
+  <div class="lepivy">
+    <video muted loop playsinline preload="metadata">
+      <source src="assets/hero_video_2.mp4" type="video/mp4">
+    </video>
+    <div class="clona" aria-hidden="true"></div>
+    <div class="kap-text">
+      <p class="kicker">Kapitola 04 — Pohár</p>
+      <h2 data-split>Hustý ako<br><span class="stroke">poctivosť.</span></h2>
+      <p class="pod">Pravý med padá z naberačky pomaly, v nepretržitej stuhe.
+        Presne takto spoznáš, že nebol prihrievaný ani riedený.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ OBCHOD — vejár pohárov ============ -->
+<section class="obchod" id="obchod" aria-label="Obchod">
+  <div class="obchod-hlava">
+    <p class="kicker">Kapitola 05 — Výber</p>
+    <h2>Vyber si svoju lúku.<br><span class="akcent">Každý med chutí inak.</span></h2>
+    <p class="pozn">Prejdi kurzorom po rade pohárov — ktorý vystúpi, ten sa predstaví.
+      V cene každého medu je zahrnutý pohár. Objednávky telefonicky alebo cez Facebook.</p>
+  </div>
+
+  <div class="vejar" role="listbox" aria-label="Produkty — vyber pohár" tabindex="0">
+    <button class="okno" role="option" data-i="0" aria-selected="true">
+      <img src="assets/produkt_kvetovy.png" alt="Kvetový med v pohári">
+      <span class="stitok">Kvetový</span>
+    </button>
+    <button class="okno" role="option" data-i="1" aria-selected="false">
+      <img src="assets/produkt_lesny.png" alt="Lesný med v pohári">
+      <span class="stitok">Lesný</span>
+    </button>
+    <button class="okno" role="option" data-i="2" aria-selected="false">
+      <img src="assets/produkt_agatovy.png" alt="Agátový med v pohári">
+      <span class="stitok">Agátový</span>
+    </button>
+    <button class="okno" role="option" data-i="3" aria-selected="false">
+      <img src="assets/produkt_lipovy.png" alt="Lipový med v pohári">
+      <span class="stitok">Lipový</span>
+    </button>
+    <button class="okno" role="option" data-i="4" aria-selected="false">
+      <img src="assets/produkt_medovicovy.png" alt="Medovicový med v pohári">
+      <span class="stitok">Medovicový</span>
+    </button>
+    <button class="okno" role="option" data-i="5" aria-selected="false">
+      <img src="assets/produkt_pastovany.png" alt="Pastovaný med v pohári">
+      <span class="stitok">Pastovaný</span>
+    </button>
+    <button class="okno" role="option" data-i="6" aria-selected="false">
+      <img src="assets/produkt_propolis.png" alt="Propolisová tinktúra vo fľaštičke">
+      <span class="stitok">Propolis</span>
+    </button>
+    <button class="okno" role="option" data-i="7" aria-selected="false">
+      <img src="assets/produkt_pel.png" alt="Včelí peľ v pohári">
+      <span class="stitok">Peľ</span>
+    </button>
+  </div>
+
+  <div class="detail" aria-live="polite">
+    <h3 id="d-nazov">Kvetový med</h3>
+    <p class="vaha" id="d-vaha">950 g</p>
+    <p class="popis" id="d-popis">Svetlý med z jarných lúk — taký, akým med vonia v detských spomienkach.</p>
+    <p class="cena" id="d-cena">8,00 €</p>
+    <button class="kupit" type="button" id="d-kupit" data-nazov="Kvetový med">Do košíka</button>
+  </div>
+</section>
+
+<!-- ============ KAPITOLA 6 — STÔL (med v čaji) ============ -->
+<section class="kapitola" id="k6" aria-label="Kapitola 6 — Stôl">
+  <div class="lepivy">
+    <video muted loop playsinline preload="metadata" poster="assets/caj_lyzicka_med.png">
+      <source src="assets/hero_video_5_trim.mp4" type="video/mp4">
+    </video>
+    <div class="clona" aria-hidden="true"></div>
+    <div class="kap-text">
+      <p class="kicker">Kapitola 06 — Stôl</p>
+      <h2 data-split>Koniec cesty.<br>Začiatok chuti.</h2>
+      <p class="pod">Lyžička do vlažného čaju — nie horúceho, nech si med
+        nechá všetko, čo doň včely uložili. Dobrú chuť od Poláčkovcov.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINÁLE — kontakt ============ -->
+<section class="finale" aria-label="Objednávka">
+  <div class="plast-bg" aria-hidden="true"></div>
+  <div class="vnutro">
+    <h2 class="odhal">Celú cestu prešiel<br><span class="akcent">kvôli vám.</span></h2>
+    <p class="odhal">Zavolajte alebo napíšte a dohodneme osobný odber
+      v Novom Meste nad Váhom. Bez prekupníkov, priamo od včelára.</p>
+    <div class="cta odhal">
+      <a class="btn btn-plny" href="tel:+421907737502">Zavolať 0907 737 502</a>
+      <a class="btn btn-tich" href="https://www.facebook.com/vcelamarket" target="_blank" rel="noopener">Napísať na Facebooku</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ KONTAKT ============ -->
+<footer class="kontakt" id="kontakt">
+  <div class="stlp">
+    <h3>VČELA·MARKET</h3>
+    <p>Včelárstvo Poláček — váš rodinný včelár.
+      Med a včelie produkty priamo z našich úľov.</p>
+  </div>
+  <div class="stlp">
+    <b>Kde nás nájdete</b>
+    <p>Karpatská 27<br>915 01 Nové Mesto nad Váhom</p>
+  </div>
+  <div class="stlp">
+    <b>Ozvite sa</b>
+    <p><a href="tel:+421907737502">0907 737 502</a><br>
+       <a href="tel:+421908412435">0908 412 435</a><br>
+       <a href="https://www.facebook.com/vcelamarket" target="_blank" rel="noopener">facebook.com/vcelamarket</a></p>
+  </div>
+  <div class="tiraz">
+    <span>© 2026 Včelárstvo Poláček · Nové Mesto nad Váhom</span>
+    <button class="btn btn-plny" type="button" id="spat-hore">Späť na začiatok</button>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script>
+/* ============================================================
+   VČELA MARKET 2.0 — skripty
+   1. produkty: vejár + detail + demo košík (beží vždy)
+   2. videá: play/pause podľa viewportu (šetrí GPU aj batériu)
+   3. animácie: Lenis + ScrollTrigger — split nadpisy, HUD,
+      parallax plástov, počítadlá (nie pri reduced motion)
+   ============================================================ */
+
+/* --- 1. produkty + košík --- */
+(function(){
+  'use strict';
+  const PRODUKTY = [
+    { nazov:'Kvetový med',          vaha:'950 g',  cena:'8,00 €',
+      popis:'Svetlý med z jarných lúk — taký, akým med vonia v detských spomienkach.' },
+    { nazov:'Lesný med',            vaha:'950 g',  cena:'10,00 €',
+      popis:'Tmavší a plnší, z kvetov a stromov spod Karpát.' },
+    { nazov:'Agátový med',          vaha:'950 g',  cena:'11,00 €',
+      popis:'Takmer číry, jemný a pomaly kryštalizujúci — kráľ ľahkých medov.' },
+    { nazov:'Lipový med',           vaha:'950 g',  cena:'11,00 €',
+      popis:'Zlatý med z júlových alejí, s nezameniteľnou vôňou lipy.' },
+    { nazov:'Medovicový med',       vaha:'950 g',  cena:'16,00 €',
+      popis:'Tmavý mahagón, minerálny a dlhý v chuti. Med, na ktorý sa čaká.' },
+    { nazov:'Pastovaný med',        vaha:'950 g · aj zázvor / škorica', cena:'9,00 €',
+      popis:'Hodvábne krémový, natiera sa ako maslo a nikdy nestvrdne na kameň.' },
+    { nazov:'Propolisová tinktúra', vaha:'30 ml',  cena:'4,00 €',
+      popis:'Lekárnička z úľa — prírodná ochrana, ktorou si včely dezinfikujú domov.' },
+    { nazov:'Včelí peľ',            vaha:'100 g',  cena:'3,00 €',
+      popis:'Zrnká peľu plné bielkovín — lyžička denne do jogurtu či kaše.' },
+  ];
+  const okna   = Array.from(document.querySelectorAll('.okno'));
+  const dNazov = document.getElementById('d-nazov');
+  const dVaha  = document.getElementById('d-vaha');
+  const dPopis = document.getElementById('d-popis');
+  const dCena  = document.getElementById('d-cena');
+  const dKupit = document.getElementById('d-kupit');
+
+  function vyber(i){
+    const p = PRODUKTY[i];
+    okna.forEach((o,j) => {
+      o.classList.toggle('vybrane', j === i);
+      o.setAttribute('aria-selected', j === i);
+    });
+    dNazov.textContent = p.nazov;
+    dVaha.textContent  = p.vaha;
+    dPopis.textContent = p.popis;
+    dCena.textContent  = p.cena;
+    dKupit.dataset.nazov = p.nazov;
+  }
+  okna.forEach(o => {
+    const i = Number(o.dataset.i);
+    o.addEventListener('mouseenter', () => vyber(i));
+    o.addEventListener('focus',      () => vyber(i));
+    o.addEventListener('click',      () => vyber(i));
+  });
+  vyber(0);
+
+  /* demo košík */
+  let pocet = 0, casovac;
+  const badge = document.getElementById('kosik-pocet');
+  const toast = document.getElementById('toast');
+  dKupit.addEventListener('click', () => {
+    pocet++;
+    badge.textContent = pocet;
+    toast.textContent = dKupit.dataset.nazov + ' — pridané do košíka (demo)';
+    toast.classList.add('vidno');
+    clearTimeout(casovac);
+    casovac = setTimeout(() => toast.classList.remove('vidno'), 2000);
+  });
+
+  /* tlačidlo späť na začiatok (Lenis ak beží, inak natívny smooth scroll) */
+  document.getElementById('spat-hore').addEventListener('click', () => {
+    if (window.__lenis) window.__lenis.scrollTo(0);
+    else window.scrollTo({ top:0, behavior:'smooth' });
+  });
+})();
+
+/* --- 2. videá: hrajú len vo viewporte --- */
+(function(){
+  'use strict';
+  const redukovanyPohyb = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const videa = document.querySelectorAll('.kapitola video');
+  if (redukovanyPohyb){
+    videa.forEach(v => { v.removeAttribute('autoplay'); v.pause(); });
+    return;
+  }
+  const io = new IntersectionObserver(zaznamy => {
+    zaznamy.forEach(z => {
+      const v = z.target;
+      if (z.isIntersecting){ v.play().catch(()=>{}); }
+      else { v.pause(); }
+    });
+  }, { threshold: 0.12 });
+  videa.forEach(v => io.observe(v));
+})();
+
+/* --- 3. animácie --- */
+(function(){
+  'use strict';
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  /* Lenis + ScrollTrigger (povinné presne takto) */
+  const lenis = new Lenis({ autoRaf:false, lerp:0.1 });
+  window.__lenis = lenis;
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(t => lenis.raf(t*1000));
+  gsap.ticker.lagSmoothing(0);
+
+  /* split nadpisov na slová (bez SplitText pluginu) —
+     textové uzly sa obalia po slovách, <br>/<span> ostávajú nedotknuté */
+  document.querySelectorAll('[data-split]').forEach(el => {
+    Array.from(el.childNodes).forEach(uzol => {
+      if (uzol.nodeType === Node.TEXT_NODE){
+        const slova = uzol.textContent.trim().split(/\s+/).filter(Boolean);
+        if (!slova.length){ uzol.remove(); return; }
+        const frag = document.createDocumentFragment();
+        slova.forEach(s => {
+          const span = document.createElement('span');
+          span.className = 'slovo';
+          span.textContent = s;
+          frag.appendChild(span);
+          frag.appendChild(document.createTextNode(' '));
+        });
+        uzol.replaceWith(frag);
+      } else if (uzol.nodeType === Node.ELEMENT_NODE && uzol.tagName !== 'BR'){
+        uzol.classList.add('slovo');
+      }
+    });
+  });
+  /* hero nadpis: nábeh hneď po načítaní */
+  gsap.from('#k1 .slovo', { y:46, opacity:0, duration:1, stagger:.07,
+    ease:'power3.out', delay:.25 });
+  gsap.from('#k1 .pod, #k1 .cta, #k1 .kicker', { y:26, opacity:0, duration:.9,
+    stagger:.1, ease:'power3.out', delay:.7 });
+  /* ostatné kapitoly: nadpis pri vstupe */
+  document.querySelectorAll('.kapitola:not(#k1) .kap-text').forEach(blok => {
+    gsap.from(blok.querySelectorAll('.slovo'), {
+      y:42, opacity:0, duration:.85, stagger:.06, ease:'power3.out',
+      scrollTrigger:{ trigger:blok.closest('.kapitola'), start:'top 55%', once:true }});
+    gsap.from(blok.querySelectorAll('.pod, .kicker'), {
+      y:24, opacity:0, duration:.8, stagger:.12, ease:'power3.out',
+      scrollTrigger:{ trigger:blok.closest('.kapitola'), start:'top 50%', once:true }});
+  });
+
+  /* HUD: aktívna kapitola + medový stĺpec */
+  const hudOdkazy = gsap.utils.toArray('.hud a');
+  hudOdkazy.forEach(a => {
+    const ciel = document.getElementById(a.dataset.kap);
+    if (!ciel) return;
+    ScrollTrigger.create({
+      trigger: ciel, start:'top 55%', end:'bottom 55%',
+      onToggle: self => a.classList.toggle('aktivna', self.isActive)
+    });
+  });
+  const stlpec = document.querySelector('.hud .med-stlpec');
+  ScrollTrigger.create({
+    trigger: document.body, start:'top top', end:'bottom bottom', scrub:.4,
+    onUpdate: self => { stlpec.style.height = (self.progress * 100) + '%'; }
+  });
+
+  /* parallax plástových pozadí */
+  gsap.utils.toArray('.plast-bg').forEach(bg => {
+    gsap.fromTo(bg, { yPercent:-8 }, { yPercent:8, ease:'none',
+      scrollTrigger:{ trigger:bg.parentElement, start:'top bottom', end:'bottom top', scrub:.5 }});
+  });
+
+  /* počítadlá čísel */
+  document.querySelectorAll('[data-pocitadlo]').forEach(el => {
+    const ciel = Number(el.dataset.pocitadlo);
+    const stav = { n:0 };
+    gsap.to(stav, { n:ciel, duration:1.6, ease:'power2.out',
+      onUpdate: () => { el.textContent = Math.round(stav.n); },
+      scrollTrigger:{ trigger:el, start:'top 85%', once:true }});
+  });
+
+  /* revealy (interlude, finále) */
+  gsap.utils.toArray('.odhal').forEach(el => {
+    gsap.from(el, { y:36, opacity:0, duration:.9, ease:'power3.out',
+      scrollTrigger:{ trigger:el, start:'top 88%', once:true }});
+  });
+
+  /* deep-link (#obchod a pod.) — Lenis inak drží scroll na 0 */
+  if (location.hash){
+    const ciel = document.querySelector(location.hash);
+    if (ciel){
+      lenis.scrollTo(ciel, { immediate:true });
+      ScrollTrigger.refresh();
+    }
+  }
+})();
+</script>
+</body>
+</html>
